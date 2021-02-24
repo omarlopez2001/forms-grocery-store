@@ -1,5 +1,6 @@
 from sqlalchemy_utils import URLType
-
+from sqlalchemy.orm import backref
+from flask_login import UserMixin
 from grocery_app import db
 from grocery_app.utils import FormEnum
 
@@ -18,6 +19,13 @@ class GroceryStore(db.Model):
     title = db.Column(db.String(80), nullable=False)
     address = db.Column(db.String(200), nullable=False)
     items = db.relationship('GroceryItem', back_populates='store')
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_by = db.relationship('User')
+    def __str__(self):
+        return f'{self.title}'
+
+    def __repr__(self):
+        return f'{self.title}'
 
 class GroceryItem(db.Model):
     """Grocery Item model."""
@@ -29,3 +37,27 @@ class GroceryItem(db.Model):
     store_id = db.Column(
         db.Integer, db.ForeignKey('grocery_store.id'), nullable=False)
     store = db.relationship('GroceryStore', back_populates='items')
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_by = db.relationship('User')
+    shopping_lists = db.relationship('User', secondary='shopping_list', back_populates = 'shopping_list_items')
+    def __str__(self):
+        return f'{self.name}'
+
+    def __repr__(self):
+        return f'{self.name}'
+    
+class User(db.Model, UserMixin):
+    """User model"""
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Colummn(db.String(25), nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    shopping_list_items = db.relationship('GroceryItem', secondary='shopping_list', back_populates = 'shopping_lists')
+    def __str__(self):
+        return f'{self.username}'
+
+    def __repr__(self):
+        return f'{self.username}'
+
+shopping_list_table = db.Table('shopping_list',
+    db.Column('groceryitem_id', db.Integer, db.ForeignKey('grocery_item.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')))
